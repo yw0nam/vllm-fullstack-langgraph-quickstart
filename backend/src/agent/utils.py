@@ -1,5 +1,52 @@
-from typing import Any, Dict, List
-from langchain_core.messages import AnyMessage, AIMessage, HumanMessage
+from typing import Any, Dict, List, Tuple, Literal
+import json
+from langchain_core.messages import AnyMessage, AIMessage, HumanMessage, ToolMessage
+import os
+
+# 로깅 설정 추가
+import sys
+
+sys.path.append(
+    "/Users/nam-young-woo/Desktop/codes/work/vllm-fullstack-langgraph-quickstart/backend"
+)
+from components.logging_config import UTILS_LOGGER, log_error_with_context
+
+
+def get_llm_model(
+    model_type: Literal["vllm", "gemini"],
+    temperature: float = 0.0,
+    max_retries: int = 2,
+    top_p: float = 0.8,
+    top_k: int = 20,
+) -> str:
+    """
+    Get the LLM model based on the type.
+    """
+    if model_type == "vllm":
+        from langchain_openai import ChatOpenAI
+
+        llm = ChatOpenAI(
+            model=os.getenv("MODEL_NAME"),
+            temperature=temperature,
+            max_retries=max_retries,
+            openai_api_key=os.getenv("MODEL_API_KEY"),
+            openai_api_base=os.getenv("MODEL_API_URL"),
+            top_p=top_p,
+            extra_body={"top_k": top_k},
+        )
+        return llm
+    elif model_type == "gemini":
+        from langchain_google_genai import ChatGoogleGenerativeAI
+
+        llm = ChatGoogleGenerativeAI(
+            model=os.getenv("GEMINI_MODEL_NAME"),
+            temperature=temperature,
+            max_retries=max_retries,
+            google_api_key=os.getenv("GEMINI_API_KEY"),
+        )
+        return llm
+    else:
+        raise ValueError(f"Unsupported LLM type: {model_type}")
 
 
 def get_research_topic(messages: List[AnyMessage]) -> str:
@@ -31,7 +78,7 @@ def resolve_urls(urls_to_resolve: List[Any], id: int) -> Dict[str, str]:
     resolved_map = {}
     for idx, url in enumerate(urls):
         if url not in resolved_map:
-            resolved_map[url] = f"{prefix}{id}-{idx}"
+            resolved_map[url] = f"{id}-{idx}"
 
     return resolved_map
 
@@ -164,3 +211,54 @@ def get_citations(response, resolved_urls_map):
                     pass
         citations.append(citation)
     return citations
+
+
+def get_sources(messages: list[AnyMessage], session_id: int) -> list[dict]:
+    sources = []
+    for message in messages:
+        if isinstance(message, ToolMessage):
+            if message.name == "tavily_search":
+                try:
+                    results = json.loads(message.content)["results"]
+                except (json.JSONDecodeError, KeyError) as e:
+                    log_error_with_context(
+                        UTILS_LOGGER, e, "get_sources", {"message": message.content}
+                    )
+                    continue
+                for idx, result in enumerate(results):
+                    sources.append(
+                        {
+                            "label": result["title"],
+                            "value": result["url"],
+                            "short_url": f"{session_id}-{idx}",
+                            "content": result["content"],
+                        }
+                    )
+    return sources
+
+
+def insert_citation(text, citations_list):
+    """
+    Inserts citation markers into a text string based on start and end indices.
+
+    Args:
+        text (str): The original text string.
+        citations_list (list): A list of dictionaries, where each dictionary
+                               contains 'start_index', 'end_index', and
+                               'segment_string' (the marker to insert).
+                               Indices are assumed to be for the original text.
+
+    Returns:
+        str: The text with citation markers inserted.
+    """
+    # Sort citations by end_index in descending order.
+    # If end_index is the same, secondary sort by start_index descending.
+    # This ensures that insertions at the end of the string don't affect
+    # the indices of earlier parts of the string that still need to be processed.
+    modified_text = text
+    for idx, citation_info in enumerate(citations_list):
+        modified_text = modified_text.replace(
+            f"[{idx}]", f"[{citation_info['label']}]({citation_info['short_url']})"
+        )
+
+    return modified_text

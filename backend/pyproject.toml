@@ -9,15 +9,23 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11,<4.0"
 dependencies = [
-    "langgraph>=0.2.6",
-    "langchain>=0.3.19",
-    "langchain-google-genai",
+    "langgraph>=0.4.7",
+    "langchain-community>=0.3.24",
     "python-dotenv>=1.0.1",
     "langgraph-sdk>=0.1.57",
     "langgraph-cli",
     "langgraph-api",
     "fastapi",
     "google-genai",
+    "langchain-tavily>=0.2.1",
+    "jupyter>=1.1.1",
+    "notebook>=7.4.3",
+    "langchain-openai>=0.3.21",
+    "langchain>=0.3.25",
+    "streamlit>=1.45.1",
+    "watchdog>=6.0.0",
+    "openai>=1.84.0",
+    "langchain-google-genai>=2.1.7",
 ]
 
 
