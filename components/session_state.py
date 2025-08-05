@@ -28,12 +28,22 @@ def initialize_session_state():
         }
 
     # Initialize model and search configurations
-    st.session_state.model_type = "vllm"
-    st.session_state.search_type = "tavily"
-    st.session_state.user_tavily_api_key = ""
-    os.environ["TAVILY_API_KEY"] = st.session_state.user_tavily_api_key
-    st.session_state.user_google_api_key = ""
-    os.environ["GOOGLE_API_KEY"] = st.session_state.user_google_api_key
+    if "model_type" not in st.session_state:
+        st.session_state.model_type = "vllm"
+    if "search_type" not in st.session_state:
+        st.session_state.search_type = "tavily"
+
+    # Initialize user API keys only if they don't exist
+    if "user_tavily_api_key" not in st.session_state:
+        st.session_state.user_tavily_api_key = ""
+    if "user_google_api_key" not in st.session_state:
+        st.session_state.user_google_api_key = ""
+
+    # Only set environment variables if they don't already exist or if user has provided values
+    if st.session_state.user_tavily_api_key and not os.environ.get("TAVILY_API_KEY"):
+        os.environ["TAVILY_API_KEY"] = st.session_state.user_tavily_api_key
+    if st.session_state.user_google_api_key and not os.environ.get("GOOGLE_API_KEY"):
+        os.environ["GOOGLE_API_KEY"] = st.session_state.user_google_api_key
 
     # Track whether user settings have been applied
     if "settings_applied" not in st.session_state:
@@ -54,6 +64,33 @@ def reset_research_progress():
 def clear_messages():
     """메시지 기록을 삭제합니다."""
     st.session_state.messages = []
+
+
+def clear_session_with_api_keys():
+    """전체 세션을 초기화하고 사용자 입력 API 키들을 삭제합니다."""
+    import os
+    from dotenv import load_dotenv
+    
+    # 현재 .env 파일의 원본 값들을 다시 로드
+    load_dotenv(override=True)
+    
+    # .env 파일에 정의된 원본 키들을 저장
+    original_tavily_key = os.getenv("TAVILY_API_KEY")
+    original_google_key = os.getenv("GOOGLE_API_KEY")
+    
+    # 세션 상태 완전 초기화
+    st.session_state.clear()
+    
+    # 환경변수를 .env 파일의 원본 값으로 복원
+    if original_tavily_key:
+        os.environ["TAVILY_API_KEY"] = original_tavily_key
+    elif "TAVILY_API_KEY" in os.environ:
+        del os.environ["TAVILY_API_KEY"]
+        
+    if original_google_key:
+        os.environ["GOOGLE_API_KEY"] = original_google_key
+    elif "GOOGLE_API_KEY" in os.environ:
+        del os.environ["GOOGLE_API_KEY"]
 
 
 def clear_session():

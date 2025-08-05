@@ -19,30 +19,31 @@ def validate_configuration():
     # Model validation
     model_type = st.session_state.model_type
     if model_type == "vllm":
-        import os
-
         if not os.getenv("MODEL_API_KEY") or not os.getenv("MODEL_API_URL"):
             errors.append(
                 "vllm을 사용하려면 .env 파일에 MODEL_API_KEY와 MODEL_API_URL이 설정되어야 합니다."
             )
     elif model_type == "gemini":
-        if not st.session_state.user_google_api_key.strip():
-            errors.append("gemini를 사용하려면 google API 키를 입력해야 합니다.")
+        google_key = (
+            os.getenv("GOOGLE_API_KEY") or st.session_state.user_google_api_key.strip()
+        )
+        if not google_key:
+            errors.append("gemini를 사용하려면 Google API 키가 필요합니다.")
 
     # Search validation
     search_type = st.session_state.search_type
     if search_type == "tavily":
-        import os
-
-        tavily_key = os.getenv("TAVILY_API_KEY") or st.session_state.user_tavily_api_key
+        tavily_key = (
+            os.getenv("TAVILY_API_KEY") or st.session_state.user_tavily_api_key.strip()
+        )
         if not tavily_key:
             errors.append("tavily 검색을 사용하려면 API 키가 필요합니다.")
     elif search_type == "google":
-        import os
-
-        google_key = os.getenv("GOOGLE_API_KEY") or st.session_state.user_google_api_key
+        google_key = (
+            os.getenv("GOOGLE_API_KEY") or st.session_state.user_google_api_key.strip()
+        )
         if not google_key:
-            errors.append("google 검색을 사용하려면 google API 키가 필요합니다.")
+            errors.append("google 검색을 사용하려면 Google API 키가 필요합니다.")
 
     return errors
 
@@ -91,13 +92,21 @@ class ChatInterface:
 
     def _process_ai_response(self, prompt):
         """AI 응답을 처리합니다."""
+        # 환경변수와 세션 상태에서 API 키를 가져옵니다
+        google_api_key = (
+            os.getenv("GOOGLE_API_KEY") or st.session_state.user_google_api_key.strip()
+        )
+        tavily_api_key = (
+            os.getenv("TAVILY_API_KEY") or st.session_state.user_tavily_api_key.strip()
+        )
+
         config = {
             "configurable": {
                 "thread_id": st.session_state.thread_id,
                 "search_type": st.session_state.search_type,
                 "model_type": st.session_state.model_type,
-                "google_api_key": st.session_state.user_google_api_key,
-                "tavily_api_key": st.session_state.user_tavily_api_key,
+                "google_api_key": google_api_key,
+                "tavily_api_key": tavily_api_key,
             }
         }
         final_answer = ""

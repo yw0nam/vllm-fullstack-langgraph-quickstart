@@ -190,8 +190,9 @@ class SidebarManager:
             st.session_state.messages = []
             st.rerun()
 
-        if st.button("🔄 세션 초기화"):
-            st.session_state.clear()
+        if st.button("🔄 세션 초기화", help="모든 대화 기록과 입력한 API 키를 삭제하고 세션을 초기화합니다"):
+            from .session_state import clear_session_with_api_keys
+            clear_session_with_api_keys()
             st.rerun()
 
     def _apply_user_settings(self):
@@ -201,32 +202,18 @@ class SidebarManager:
         applied_settings = []
 
         # Apply google API key (for both gemini model and google Search)
-        # Priority: use the key from the currently selected model/search combination
-        google_api_key_to_apply = None
-
-        if (
-            st.session_state.model_type == "gemini"
-            and st.session_state.user_google_api_key.strip()
-        ):
-            google_api_key_to_apply = st.session_state.user_google_api_key.strip()
-            applied_settings.append("google API Key")
-        if (
-            st.session_state.search_type == "google"
-            and st.session_state.user_google_api_key.strip()
-        ):
-            google_api_key_to_apply = st.session_state.user_google_api_key.strip()
-            applied_settings.append("google API Key")
-
-        # Apply the google API key if we have one
-        if google_api_key_to_apply:
-            os.environ["GOOGLE_API_KEY"] = google_api_key_to_apply
-            self.config["google_api_key"] = google_api_key_to_apply
+        if st.session_state.user_google_api_key.strip():
+            google_api_key = st.session_state.user_google_api_key.strip()
+            os.environ["GOOGLE_API_KEY"] = google_api_key
+            self.config["google_api_key"] = google_api_key
+            applied_settings.append("Google API Key")
 
         # Apply tavily API key if provided
         if st.session_state.user_tavily_api_key.strip():
-            os.environ["TAVILY_API_KEY"] = st.session_state.user_tavily_api_key.strip()
-            self.config["tavily_api_key"] = st.session_state.user_tavily_api_key.strip()
-            applied_settings.append("tavily API Key")
+            tavily_api_key = st.session_state.user_tavily_api_key.strip()
+            os.environ["TAVILY_API_KEY"] = tavily_api_key
+            self.config["tavily_api_key"] = tavily_api_key
+            applied_settings.append("Tavily API Key")
 
         # Show success message
         if applied_settings:
@@ -249,20 +236,12 @@ class SidebarManager:
             != self.config.get("tavily_api_key", "")
         )
 
-        # Check for pending google API key (from either gemini model or google Search)
-        google_pending = False
-        if st.session_state.model_type == "gemini":
-            google_pending = (
-                st.session_state.user_google_api_key.strip()
-                and st.session_state.user_google_api_key.strip()
-                != self.config.get("google_api_key", "")
-            )
-        elif st.session_state.search_type == "google":
-            google_pending = (
-                st.session_state.user_google_api_key.strip()
-                and st.session_state.user_google_api_key.strip()
-                != self.config.get("google_api_key", "")
-            )
+        # Check for pending google API key
+        google_pending = (
+            st.session_state.user_google_api_key.strip()
+            and st.session_state.user_google_api_key.strip()
+            != self.config.get("google_api_key", "")
+        )
 
         return tavily_pending or google_pending
 
