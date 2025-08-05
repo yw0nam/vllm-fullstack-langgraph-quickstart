@@ -3,6 +3,7 @@ Session state management module
 Streamlit 세션 상태를 초기화하고 관리합니다.
 """
 
+import os
 import streamlit as st
 import uuid
 
@@ -27,17 +28,12 @@ def initialize_session_state():
         }
 
     # Initialize model and search configurations
-    if "model_type" not in st.session_state:
-        st.session_state.model_type = "vllm"
-
-    if "search_type" not in st.session_state:
-        st.session_state.search_type = "tavily"
-
-    if "user_tavily_api_key" not in st.session_state:
-        st.session_state.user_tavily_api_key = ""
-
-    if "user_google_api_key" not in st.session_state:
-        st.session_state.user_google_api_key = ""
+    st.session_state.model_type = "vllm"
+    st.session_state.search_type = "tavily"
+    st.session_state.user_tavily_api_key = ""
+    os.environ["TAVILY_API_KEY"] = st.session_state.user_tavily_api_key
+    st.session_state.user_google_api_key = ""
+    os.environ["GOOGLE_API_KEY"] = st.session_state.user_google_api_key
 
     # Track whether user settings have been applied
     if "settings_applied" not in st.session_state:
