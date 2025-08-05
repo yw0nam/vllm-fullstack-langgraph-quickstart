@@ -76,19 +76,19 @@ class SidebarManager:
 
         # Show API key input for gemini
         if model_type == "gemini":
-            gemini_api_key = st.text_input(
+            google_api_key = st.text_input(
                 "google API Key",
-                value=st.session_state.user_gemini_api_key,
+                value=st.session_state.user_google_api_key,
                 type="password",
-                key="gemini_key_input",
-                help="gemini 모델 사용을 위한 google API 키를 입력하세요",
+                key="google_key_input",
+                help="google 모델 사용을 위한 google API 키를 입력하세요",
                 placeholder="google API 키를 입력하세요...",
             )
-            st.session_state.user_gemini_api_key = gemini_api_key
+            st.session_state.user_google_api_key = google_api_key
 
-            if not gemini_api_key:
+            if not google_api_key:
                 st.warning("⚠️ gemini 사용을 위해서는 google API 키가 필요합니다.")
-            elif gemini_api_key and gemini_api_key != self.config.get("google_api_key"):
+            elif google_api_key and google_api_key != self.config.get("google_api_key"):
                 st.info(
                     "💡 API 키를 입력했습니다. '✅ 설정 적용' 버튼을 눌러 적용하세요."
                 )
@@ -206,11 +206,11 @@ class SidebarManager:
 
         if (
             st.session_state.model_type == "gemini"
-            and st.session_state.user_gemini_api_key.strip()
+            and st.session_state.user_google_api_key.strip()
         ):
-            google_api_key_to_apply = st.session_state.user_gemini_api_key.strip()
-            applied_settings.append("gemini API Key")
-        elif (
+            google_api_key_to_apply = st.session_state.user_google_api_key.strip()
+            applied_settings.append("google API Key")
+        if (
             st.session_state.search_type == "google"
             and st.session_state.user_google_api_key.strip()
         ):
@@ -253,8 +253,8 @@ class SidebarManager:
         google_pending = False
         if st.session_state.model_type == "gemini":
             google_pending = (
-                st.session_state.user_gemini_api_key.strip()
-                and st.session_state.user_gemini_api_key.strip()
+                st.session_state.user_google_api_key.strip()
+                and st.session_state.user_google_api_key.strip()
                 != self.config.get("google_api_key", "")
             )
         elif st.session_state.search_type == "google":
@@ -274,9 +274,7 @@ class SidebarManager:
         # Check if we have the required API keys
         has_vllm_config = self.config.get("api_key") and self.config.get("api_base_url")
         has_google_api_key = (
-            self.config.get("google_api_key")
-            or st.session_state.user_gemini_api_key
-            or st.session_state.user_google_api_key
+            self.config.get("google_api_key") or st.session_state.user_google_api_key
         )
         has_tavily_api_key = (
             self.config.get("tavily_api_key") or st.session_state.user_tavily_api_key
@@ -321,116 +319,39 @@ class SidebarManager:
         st.write(f"**메시지 수:** {len(st.session_state.messages)}")
 
     def _render_env_info(self):
-        """환경 설정 정보를 렌더링합니다."""
+        """환경 설정 정보를 간단히 렌더링합니다."""
         st.markdown("## 🔧 현재 설정")
+        st.write(f"**모델:** {st.session_state.model_type}")
+        st.write(f"**검색 엔진:** {st.session_state.search_type}")
 
-        # Model Configuration
-        st.write(f"**선택된 모델:** {st.session_state.model_type}")
+        # vllm 설정
         if st.session_state.model_type == "vllm":
-            st.write(f"**vllm API URL:** `{self.config.get('api_base_url', 'N/A')}`")
-            st.write(
-                f"**vllm API Key:** {'✅ 설정됨' if self.config.get('api_key') else '❌ 설정되지 않음'}"
-            )
-        elif st.session_state.model_type == "gemini":
-            # Check both config and user input for gemini
-            effective_gemini_key = (
+            st.write(f"API URL: `{self.config.get('api_base_url', 'N/A')}`")
+            st.write(f"API Key: {'✅' if self.config.get('api_key') else '❌'}")
+
+        # gemini 설정
+        if st.session_state.model_type == "gemini":
+            key = (
                 self.config.get("google_api_key")
-                or st.session_state.user_gemini_api_key
+                or st.session_state.user_google_api_key
             )
-            gemini_key_status = (
-                "✅ 설정됨" if effective_gemini_key else "❌ 설정되지 않음"
-            )
+            st.write(f"google API Key: {'✅' if key else '❌'}")
 
-            # Show source of the key
-            if (
-                self.config.get("google_api_key")
-                and st.session_state.user_gemini_api_key
-            ):
-                key_source = "(환경변수 + 사용자입력 병합됨)"
-            elif self.config.get("google_api_key"):
-                key_source = "(환경변수에서)"
-            elif st.session_state.user_gemini_api_key:
-                key_source = "(사용자입력 - 적용 필요)"
-            else:
-                key_source = ""
-
-            st.write(f"**gemini API Key:** {gemini_key_status} {key_source}")
-
-        # Search Configuration
-        st.write(f"**선택된 검색:** {st.session_state.search_type}")
+        # tavily 설정
         if st.session_state.search_type == "tavily":
-            effective_tavily_key = (
+            key = (
                 self.config.get("tavily_api_key")
                 or st.session_state.user_tavily_api_key
             )
-            tavily_status = "✅ 설정됨" if effective_tavily_key else "❌ 설정되지 않음"
+            st.write(f"tavily API Key: {'✅' if key else '❌'}")
 
-            # Show source of the key
-            if (
-                self.config.get("tavily_api_key")
-                and st.session_state.user_tavily_api_key
-            ):
-                key_source = "(환경변수 + 사용자입력 병합됨)"
-            elif self.config.get("tavily_api_key"):
-                key_source = "(환경변수에서)"
-            elif st.session_state.user_tavily_api_key:
-                key_source = "(사용자입력 - 적용 필요)"
-            else:
-                key_source = ""
-
-            st.write(f"**tavily API Key:** {tavily_status} {key_source}")
-
-        elif st.session_state.search_type == "google":
-            # For google Search, check the appropriate key based on model selection
-            if st.session_state.model_type == "gemini":
-                # If using gemini model, use the gemini API key for search too
-                effective_google_key = (
-                    self.config.get("google_api_key")
-                    or st.session_state.user_gemini_api_key
-                )
-                key_source_info = "gemini API 키 사용"
-            else:
-                # If using other model (e.g., vllm), need separate google API key for search
-                effective_google_key = (
-                    self.config.get("google_api_key")
-                    or st.session_state.user_google_api_key
-                )
-                key_source_info = "google Search 전용"
-
-            google_key_status = (
-                "✅ 설정됨" if effective_google_key else "❌ 설정되지 않음"
+        # google 검색 설정
+        if st.session_state.search_type == "google":
+            key = (
+                self.config.get("google_api_key")
+                or st.session_state.user_google_api_key
             )
-
-            # Show source of the key
-            if self.config.get("google_api_key"):
-                if (
-                    st.session_state.model_type == "gemini"
-                    and st.session_state.user_gemini_api_key
-                ):
-                    key_source = f"(환경변수 + 사용자입력 병합됨, {key_source_info})"
-                elif (
-                    st.session_state.model_type != "gemini"
-                    and st.session_state.user_google_api_key
-                ):
-                    key_source = f"(환경변수 + 사용자입력 병합됨, {key_source_info})"
-                else:
-                    key_source = f"(환경변수에서, {key_source_info})"
-            else:
-                if (
-                    st.session_state.model_type == "gemini"
-                    and st.session_state.user_gemini_api_key
-                ):
-                    key_source = f"(사용자입력 - 적용 필요, {key_source_info})"
-                elif (
-                    st.session_state.model_type != "gemini"
-                    and st.session_state.user_google_api_key
-                ):
-                    key_source = f"(사용자입력 - 적용 필요, {key_source_info})"
-                else:
-                    key_source = f"({key_source_info})"
-
-            st.write(f"**google API Key:** {google_key_status} {key_source}")
-            st.caption("🔍 google Search grounding 사용")
+            st.write(f"google API Key: {'✅' if key else '❌'}")
 
     def _render_usage_guide(self):
         """사용법 안내를 렌더링합니다."""

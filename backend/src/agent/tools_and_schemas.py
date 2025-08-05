@@ -1,16 +1,20 @@
-from typing import List
+"""Tools and schemas for the agent operations."""
+
+from typing import Annotated, List
+
 import requests
-from pydantic import BaseModel, Field
-from langchain_core.tools import tool
-from typing import Annotated
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from langchain_core.tools import tool
 from langchain_tavily import TavilySearch
+from pydantic import BaseModel, Field
 
 load_dotenv()
 
 
 class SearchQueryList(BaseModel):
+    """A list of search queries for web research."""
+
     query: List[str] = Field(
         description="A list of search queries to be used for web research."
     )
@@ -20,6 +24,8 @@ class SearchQueryList(BaseModel):
 
 
 class Reflection(BaseModel):
+    """Reflection on the sufficiency of research results."""
+
     is_sufficient: bool = Field(
         description="Whether the provided summaries are sufficient to answer the user's question."
     )
@@ -32,6 +38,14 @@ class Reflection(BaseModel):
 
 
 def is_garbled(text):
+    """Check if text contains garbled characters.
+
+    Args:
+        text: The text to check for garbled content.
+
+    Returns:
+        bool: True if text appears garbled, False otherwise.
+    """
     # A simple heuristic to detect garbled text: high proportion of non-ASCII characters
     non_ascii_count = sum(1 for char in text if ord(char) > 127)
     return non_ascii_count > len(text) * 0.3
@@ -39,7 +53,7 @@ def is_garbled(text):
 
 @tool
 def fetch_url(url: Annotated[str, "Target Web site"]) -> str:
-    """Fetches and extracts clean text content from a given URL.
+    """Fetch and extract clean text content from a given URL.
 
     This function sends an HTTP GET request to the specified URL. If the
     request is successful, it parses the HTML content to extract all
@@ -89,7 +103,7 @@ def tavily_search(
         "Time range for search. you can choose 'day', 'week', 'month', 'year' or None",
     ] = None,
 ):
-    """Performs a web search using the Tavily Search API and indexes the results.
+    """Perform a web search using the Tavily Search API and index the results.
 
     This function initializes the `TavilySearch` tool with specified parameters to
     conduct a web search. After fetching the results, it iterates through them to
@@ -113,5 +127,5 @@ def tavily_search(
     )
     web_search_result = tavily_search_tool.invoke(query)
     for idx, result in enumerate(web_search_result["results"]):
-        result.update({"citation_number": f"[{idx+1}]"})
+        result.update({"citation_number": f"[{idx + 1}]"})
     return web_search_result

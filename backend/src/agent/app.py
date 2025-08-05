@@ -1,15 +1,21 @@
+"""FastAPI application for vLLM fullstack LangGraph agent."""
+
 # mypy: disable - error - code = "no-untyped-def,misc"
+import logging
 import pathlib
+
+import fastapi.exceptions
 from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
-import fastapi.exceptions
 
 # Define the FastAPI app
 app = FastAPI()
 
+logger = logging.getLogger(__name__)
+
 
 def create_frontend_router(build_dir="../frontend/dist"):
-    """Creates a router to serve the React frontend.
+    """Create a router to serve the React frontend.
 
     Args:
         build_dir: Path to the React build directory relative to this file.
@@ -21,8 +27,8 @@ def create_frontend_router(build_dir="../frontend/dist"):
     static_files_path = build_path / "assets"  # Vite uses 'assets' subdir
 
     if not build_path.is_dir() or not (build_path / "index.html").is_file():
-        print(
-            f"WARN: Frontend build directory not found or incomplete at {build_path}. Serving frontend will likely fail."
+        logger.warning(
+            f"Frontend build directory not found or incomplete at {build_path}. Serving frontend will likely fail."
         )
         # Return a dummy router if build isn't ready
         from starlette.routing import Route

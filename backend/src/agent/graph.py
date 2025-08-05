@@ -1,57 +1,53 @@
+"""LangGraph implementation for the agent."""
+
 import os
 
-from agent.tools_and_schemas import (
-    SearchQueryList,
-    Reflection,
-    fetch_url,
-    # tavily_search,
-)
-from dotenv import load_dotenv
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
-from langgraph.types import Send
-from langgraph.graph import StateGraph
-from langgraph.graph import START, END
-from langchain_core.runnables import RunnableConfig
+# 로깅 설정 추가
+import sys
 
-from langchain_tavily import TavilySearch
+from dotenv import load_dotenv
 from google.genai import Client
+from langchain_core.messages import AIMessage
+from langchain_core.runnables import RunnableConfig
+from langchain_tavily import TavilySearch
+from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import create_react_agent
+from langgraph.types import Send
+
+from agent.configuration import Configuration
+from agent.prompts import (
+    answer_instructions,
+    get_current_date,
+    query_writer_instructions,
+    reflection_instructions,
+    web_searcher_instructions,
+)
 from agent.state import (
     OverallState,
     QueryGenerationState,
     ReflectionState,
     WebSearchState,
 )
-from agent.configuration import Configuration
-from agent.prompts import (
-    get_current_date,
-    query_writer_instructions,
-    web_searcher_instructions,
-    reflection_instructions,
-    answer_instructions,
-)
+from agent.tools_and_schemas import Reflection, SearchQueryList
 from agent.utils import (
+    get_citations,
+    get_llm_model,
     get_research_topic,
     get_sources,
     insert_citation,
-    get_llm_model,
-    get_citations,
     insert_citation_markers,
     resolve_urls,
 )
-
-# 로깅 설정 추가
-import sys
 
 sys.path.append(
     "/Users/nam-young-woo/Desktop/codes/work/vllm-fullstack-langgraph-quickstart/backend"
 )
 from components.logging_config import (
     GRAPH_LOGGER,
-    log_graph_transition,
     log_api_call,
-    log_tool_usage,
     log_error_with_context,
+    log_graph_transition,
+    log_tool_usage,
 )
 
 load_dotenv()
@@ -74,8 +70,11 @@ def generate_query(state: OverallState, config: RunnableConfig) -> QueryGenerati
     GRAPH_LOGGER.info("🔄 Starting generate_query node")
 
     try:
-        configurable = Configuration.from_runnable_config(config)
+        import streamlit as st
 
+        configurable = Configuration.from_runnable_config(config)
+        os.environ["GOOGLE_API_KEY"] = st.session_state.user_google_api_key.strip()
+        os.environ["TAVILY_API_KEY"] = st.session_state.user_tavily_api_key.strip()
         # check for custom initial search query count
         if state.get("initial_search_query_count") is None:
             state["initial_search_query_count"] = configurable.number_of_initial_queries
@@ -253,7 +252,7 @@ def web_research(state: WebSearchState, config: RunnableConfig) -> OverallState:
             google_api_key = os.getenv("GOOGLE_API_KEY")
             genai_client = Client(api_key=google_api_key)
             response = genai_client.models.generate_content(
-                model="gemini-2.5-flash",
+                model=os.getenv("GEMINI_MODEL_NAME"),
                 contents=formatted_prompt,
                 config={
                     "tools": [{"google_search": {}}],

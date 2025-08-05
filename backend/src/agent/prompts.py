@@ -1,8 +1,15 @@
+"""Prompts and helper functions for the agent."""
+
 from datetime import datetime
 
 
 # Get current date in a readable format
 def get_current_date():
+    """Get the current date in a readable format.
+
+    Returns:
+        str: Current date formatted as "Month Day, Year".
+    """
     return datetime.now().strftime("%B %d, %Y")
 
 
@@ -79,8 +86,8 @@ answer_instructions = """Generate a high-quality answer to the user's question b
 Instructions:
 - The current date is {current_date}.
 - Generate a high-quality answer to the user's question based on the provided summaries and the user's question.
-- you MUST include all the citations from the summaries in the answer correctly.
-- Reorganize the citations in the answer to match the order of the citations in the summaries.
+- You must include the citations written from the search results in your answer.
+- The answer should be concise, well-structured, and directly address the user's question.
 - Final answer should be well-structured, concise, and directly address the user's question
 - You MUST use the same language with the user's query.
 

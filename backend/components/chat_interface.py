@@ -26,7 +26,7 @@ def validate_configuration():
                 "vllm을 사용하려면 .env 파일에 MODEL_API_KEY와 MODEL_API_URL이 설정되어야 합니다."
             )
     elif model_type == "gemini":
-        if not st.session_state.user_gemini_api_key:
+        if not st.session_state.user_google_api_key.strip():
             errors.append("gemini를 사용하려면 google API 키를 입력해야 합니다.")
 
     # Search validation
@@ -40,11 +40,7 @@ def validate_configuration():
     elif search_type == "google":
         import os
 
-        google_key = (
-            os.getenv("GOOGLE_API_KEY")
-            or st.session_state.user_google_api_key
-            or st.session_state.user_gemini_api_key
-        )
+        google_key = os.getenv("GOOGLE_API_KEY") or st.session_state.user_google_api_key
         if not google_key:
             errors.append("google 검색을 사용하려면 google API 키가 필요합니다.")
 
@@ -100,6 +96,8 @@ class ChatInterface:
                 "thread_id": st.session_state.thread_id,
                 "search_type": st.session_state.search_type,
                 "model_type": st.session_state.model_type,
+                "google_api_key": st.session_state.user_google_api_key,
+                "tavily_api_key": st.session_state.user_tavily_api_key,
             }
         }
         final_answer = ""

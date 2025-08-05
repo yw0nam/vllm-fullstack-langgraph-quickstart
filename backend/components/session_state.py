@@ -33,10 +33,6 @@ def initialize_session_state():
     if "search_type" not in st.session_state:
         st.session_state.search_type = "tavily"
 
-    # Initialize API keys for user input
-    if "user_gemini_api_key" not in st.session_state:
-        st.session_state.user_gemini_api_key = ""
-
     if "user_tavily_api_key" not in st.session_state:
         st.session_state.user_tavily_api_key = ""
 

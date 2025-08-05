@@ -1,5 +1,8 @@
+"""State definitions for the agent graph."""
+
 from __future__ import annotations
 
+import operator
 from dataclasses import dataclass, field
 from typing import TypedDict
 
@@ -7,12 +10,9 @@ from langgraph.graph import add_messages
 from typing_extensions import Annotated
 
 
-import operator
-from dataclasses import dataclass, field
-from typing_extensions import Annotated
-
-
 class OverallState(TypedDict):
+    """Overall state for the agent graph."""
+
     messages: Annotated[list, add_messages]
     search_query: Annotated[list, operator.add]
     web_research_result: Annotated[list, operator.add]
@@ -24,6 +24,8 @@ class OverallState(TypedDict):
 
 
 class ReflectionState(TypedDict):
+    """State for reflection on research adequacy."""
+
     is_sufficient: bool
     knowledge_gap: str
     follow_up_queries: Annotated[list, operator.add]
@@ -32,19 +34,27 @@ class ReflectionState(TypedDict):
 
 
 class Query(TypedDict):
+    """A search query with rationale."""
+
     query: str
     rationale: str
 
 
 class QueryGenerationState(TypedDict):
+    """State for query generation."""
+
     query_list: list[Query]
 
 
 class WebSearchState(TypedDict):
+    """State for web search operations."""
+
     search_query: str
     id: str
 
 
 @dataclass(kw_only=True)
 class SearchStateOutput:
+    """Output state for search operations."""
+
     running_summary: str = field(default=None)  # Final report
